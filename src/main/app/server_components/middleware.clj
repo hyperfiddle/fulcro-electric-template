@@ -10,7 +10,9 @@
     [ring.util.response :refer [response file-response resource-response]]
     [ring.util.response :as resp]
     [hiccup.page :refer [html5]]
-    [taoensso.timbre :as log]))
+    [taoensso.timbre :as log]
+    [hyperfiddle.electric.httpkit-adapter :as electric]
+    [org.httpkit.server :as http-kit]))
 
 (def ^:private not-found-handler
   (fn [req]
@@ -83,6 +85,19 @@
       :else
       (ring-handler req))))
 
+(def ^:const VERSION (not-empty (System/getProperty "HYPERFIDDLE_ELECTRIC_SERVER_VERSION"))) ; to be set in prod
+
+(defn wrap-electric [handler]
+  (fn [req]
+    (if (:websocket? req)
+      (http-kit/as-channel req
+        (let [client-version (get-in req [:query-params "HYPERFIDDLE_ELECTRIC_CLIENT_VERSION"])]
+          (if (or (nil? VERSION) (= client-version VERSION))
+            (electric/handle-electric-ws req (partial electric/electric-ws-message-handler req))
+            (electric/reject-websocket-handler 1008) ; stale client - https://www.rfc-editor.org/rfc/rfc6455#section-7.4.1
+            )))
+      (handler req))))
+
 (defstate middleware
   :start
   (let [defaults-config (:ring.middleware/defaults-config config)
@@ -92,6 +107,7 @@
       wrap-transit-params
       wrap-transit-response
       (wrap-html-routes)
+      (wrap-electric)
       ;; If you want to set something like session store, you'd do it against
       ;; the defaults-config here (which comes from an EDN file, so it can't have
       ;; code initialized).

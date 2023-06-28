@@ -1,6 +1,7 @@
 {:legal-origins                  #{"localhost" "dev.lvh.me"}
 
- :org.httpkit.server/config      {:port 3000}
+ :org.httpkit.server/config      {:port 3000
+                                  :max-ws 104857600} ; Allow large value paylods. For Electric. Temporary.
 
  :taoensso.timbre/logging-config {:min-level :info}
 
