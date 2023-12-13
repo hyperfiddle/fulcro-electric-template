@@ -11,8 +11,12 @@
     [ring.util.response :as resp]
     [hiccup.page :refer [html5]]
     [taoensso.timbre :as log]
-    [hyperfiddle.electric.httpkit-adapter :as electric]
-    [org.httpkit.server :as http-kit]))
+    [org.httpkit.server :as http-kit]
+
+    [hyperfiddle.electric :as e]
+    [hyperfiddle.electric-ring-middleware-httpkit] ; httpkit adapter for electric, to plug into your middleware chain
+    app.electric-example-app                       ; load your electric apps namespaces here for httpkit to serve them.
+    ))
 
 (def ^:private not-found-handler
   (fn [req]
@@ -85,19 +89,6 @@
       :else
       (ring-handler req))))
 
-(def ^:const VERSION (not-empty (System/getProperty "HYPERFIDDLE_ELECTRIC_SERVER_VERSION"))) ; to be set in prod
-
-(defn wrap-electric [handler]
-  (fn [req]
-    (if (:websocket? req)
-      (http-kit/as-channel req
-        (let [client-version (get-in req [:query-params "HYPERFIDDLE_ELECTRIC_CLIENT_VERSION"])]
-          (if (or (nil? VERSION) (= client-version VERSION))
-            (electric/handle-electric-ws req (partial electric/electric-ws-message-handler req))
-            (electric/reject-websocket-handler 1008) ; stale client - https://www.rfc-editor.org/rfc/rfc6455#section-7.4.1
-            )))
-      (handler req))))
-
 (defstate middleware
   :start
   (let [defaults-config (:ring.middleware/defaults-config config)
@@ -107,7 +98,7 @@
       wrap-transit-params
       wrap-transit-response
       (wrap-html-routes)
-      (wrap-electric)
+      (hyperfiddle.electric-ring-middleware-httpkit/wrap-electric (fn [ring-req] (e/boot-server {} app.electric-example-app/App ring-req)))
       ;; If you want to set something like session store, you'd do it against
       ;; the defaults-config here (which comes from an EDN file, so it can't have
       ;; code initialized).

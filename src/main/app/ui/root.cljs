@@ -14,10 +14,11 @@
     [com.fulcrologic.fulcro-css.css :as css]
     [com.fulcrologic.fulcro.algorithms.form-state :as fs]
     [taoensso.timbre :as log]
-    [app.electric-example-app]
-    [hyperfiddle.electric.fulcro-dom-adapter :refer [with-electric]]
+
     [hyperfiddle.electric :as e]
-    [hyperfiddle.electric-dom2 :as edom]))
+    [hyperfiddle.electric-fulcro-dom-adapter :refer [run-electric!]]
+    app.electric-example-app
+    ))
 
 (defn field [{:keys [label valid? error-message] :as props}]
   (let [input-props (-> props (assoc :name label) (dissoc :label :valid? :error-message))]
@@ -139,6 +140,8 @@
 
 (def ui-login (comp/factory Login))
 
+(declare Settings)
+
 (defsc Main [this props]
   {:query         [:main/welcome-message]
    :initial-state {:main/welcome-message "Hi!"}
@@ -150,8 +153,7 @@
          "The Sign up and login functionalities are partially implemented, "
          "but mostly this is just a blank slate waiting "
          "for your project."))
-    (with-electric {:className "electric-container"}
-      (app.electric-example-app/App.))))
+    (run-electric! {:className "electric-container"} app.electric-example-app/App {:this this, :OtherPage Settings} )))
 
 (defsc Settings [this {:keys [:account/time-zone :account/real-name] :as props}]
   {:query         [:account/time-zone :account/real-name :account/crap]
@@ -159,10 +161,7 @@
    :route-segment ["settings"]
    :initial-state {}}
   (div :.ui.container.segment
-    (h3 "Settings")
-    (with-electric {:className "electric-container"}
-      (edom/button (edom/on! "click" (fn [_] (dr/change-route this (dr/path-to Main))))
-        (edom/text "Electric button - go to main")))))
+    (h3 "Settings")))
 
 (dr/defrouter TopRouter [this props]
   {:router-targets [Main Signup SignupSuccess Settings]})

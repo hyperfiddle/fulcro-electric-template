@@ -21,7 +21,7 @@
            ring/ring-defaults                  {:mvn/version "0.3.2"}
 
            com.hyperfiddle/electric            {:git/url "https://github.com/hyperfiddle/electric/"
-                                                :git/sha "6008d18049560bacda5b8e32c407ddf175add852"}}
+                                                :git/sha "613618d71a752a127515faa7fddda23e6b0793ba"}}
 
  :aliases {:build {:deps {io.github.clojure/tools.build {:git/tag "v0.9.4" :git/sha "76b78fe"}}
                    :ns-default build}
